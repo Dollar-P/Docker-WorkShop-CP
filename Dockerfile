@@ -11,10 +11,20 @@ RUN npm ci --omit=dev
 
 COPY app/ ./
 
+# Patch vulnerable proxy-addr inside the image
+RUN npm install proxy-addr@2.0.8 --save-exact --omit=dev
+
 # Stage 2: Runtime
 FROM node:20.11-slim
 
 WORKDIR /app
+
+# Update Debian security packages
+# Remove bundled npm, which is not needed at runtime
+RUN apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /usr/local/lib/node_modules/npm
 
 COPY --from=builder /app /app
 
